@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  shearpoint:
+    image: node:18-alpine
+    container_name: shearpoint-app
+    working_dir: /app
+    
+    # Port mapping
+    ports:
+      - "3000:3000"
+    
+    # Volume mounts for code and node_modules
+    volumes:
+      - .:/app
+      - /app/node_modules
+    
+    # Environment variables
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - LOG_LEVEL=debug
+      - DEVELOPMENT=true
+    
+    # Command to run the application
+    command: sh -c "npm install && npm run dev"
+    
+    # Development configuration
+    stdin_open: true
+    tty: true
+    
+    # Restart policy
+    restart: unless-stopped
+    
+    # Resource limits (optional, for development)
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+networks:
+  default:
+    name: shearpoint-network
