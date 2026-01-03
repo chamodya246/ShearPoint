@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="ShearPoint - Fast and secure file transfer between devices">
+    <title>ShearPoint - File Transfer & Device Discovery</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #6366f1;
+            --primary-dark: #4f46e5;
+            --primary-light: #818cf8;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --error-color: #ef4444;
+            --info-color: #3b82f6;
+            --dark-bg: #111827;
+            --card-bg: #1f2937;
+            --border-color: #374151;
+            --text-primary: #f3f4f6;
+            --text-secondary: #d1d5db;
+            --transition: all 0.3s ease;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--dark-bg) 0%, #1a1f35 100%);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        header {
+            background: rgba(17, 24, 39, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1.5rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.75rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--primary-color);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .header-status {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 0.875rem;
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: var(--error-color);
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.active {
+            background-color: var(--success-color);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Grid Layout */
+        .layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        @media (max-width: 1024px) {
+            .layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Card Styles */
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 2rem;
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.1);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .card-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(99, 102, 241, 0.1);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        /* File Upload Section */
+        .upload-area {
+            border: 2px dashed var(--border-color);
+            border-radius: 12px;
+            padding: 3rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            background: rgba(99, 102, 241, 0.02);
+        }
+
+        .upload-area:hover {
+            border-color: var(--primary-color);
+            background: rgba(99, 102, 241, 0.05);
+        }
+
+        .upload-area.dragover {
+            border-color: var(--primary-light);
+            background: rgba(99, 102, 241, 0.1);
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.7;
+        }
+
+        .upload-text {
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-text.main {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .upload-text.secondary {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        /* File List */
+        .file-list {
+            margin-top: 1.5rem;
+        }
+
+        .file-item {
+            background: rgba(99, 102, 241, 0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: var(--transition);
+        }
+
+        .file-item:hover {
+            background: rgba(99, 102, 241, 0.1);
+            border-color: var(--primary-color);
+        }
+
+        .file-info {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .file-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(99, 102, 241, 0.2);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .file-details {
+            flex: 1;
+        }
+
+        .file-name {
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+        }
+
+        .file-size {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .file-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        /* Device List */
+        .device-list {
+            margin-top: 1.5rem;
+        }
+
+        .device-item {
+            background: rgba(99, 102, 241, 0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            transition: var(--transition);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .device-item:hover {
+            background: rgba(99, 102, 241, 0.1);
+            border-color: var(--primary-color);
+            transform: translateX(4px);
+        }
+
+        .device-item.active {
+            border-color: var(--success-color);
+            background: rgba(16, 185, 129, 0.05);
+        }
+
+        .device-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .device-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(99, 102, 241, 0.2);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .device-info {
+            flex: 1;
+        }
+
+        .device-name {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .device-type {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .device-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--error-color);
+        }
+
+        .status-dot.online {
+            background-color: var(--success-color);
+        }
+
+        /* Progress Section */
+        .transfer-progress {
+            background: rgba(99, 102, 241, 0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+            display: none;
+        }
+
+        .transfer-progress.active {
+            display: block;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .progress-title {
+            font-weight: 600;
+        }
+
+        .progress-percentage {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 8px;
+            background: var(--border-color);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 4px;
+        }
+
+        .progress-details {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            font-size: 0.875rem;
+        }
+
+        .progress-detail {
+            text-align: center;
+        }
+
+        .progress-detail-label {
+            color: var(--text-secondary);
+            margin-bottom: 0.25rem;
+        }
+
+        .progress-detail-value {
+            font-weight: 600;
+            color: var(--primary-light);
+        }
+
+        /* Status Indicator Section */
+        .status-section {
+            background: rgba(99, 102, 241, 0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .status-items {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem;
+            background: rgba(17, 24, 39, 0.4);
+            border-radius: 6px;
+            border-left: 3px solid var(--border-color);
+        }
+
+        .status-item.success {
+            border-left-color: var(--success-color);
+            background: rgba(16, 185, 129, 0.05);
+        }
+
+        .status-item.warning {
+            border-left-color: var(--warning-color);
+            background: rgba(245, 158, 11, 0.05);
+        }
+
+        .status-item.error {
+            border-left-color: var(--error-color);
+            background: rgba(239, 68, 68, 0.05);
+        }
+
+        .status-item.info {
+            border-left-color: var(--info-color);
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .status-content {
+            flex: 1;
+        }
+
+        .status-message {
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+        }
+
+        .status-time {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-badge.success {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success-color);
+        }
+
+        .status-badge.warning {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning-color);
+        }
+
+        .status-badge.error {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--error-color);
+        }
+
+        .status-badge.info {
+            background: rgba(59, 130, 246, 0.2);
+            color: var(--info-color);
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--primary-color);
+            border: 1px solid var(--primary-color);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .btn-small {
+            padding: 0.5rem 1rem;
+            font-size: 0.75rem;
+        }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error-color);
+        }
+
+        .btn-danger:hover {
+            background: var(--error-color);
+            color: white;
+        }
+
+        /* Action Bar */
+        .action-bar {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--text-secondary);
+        }
+
+        .empty-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .empty-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .header-container {
+                padding: 0 1rem;
+            }
+
+            .layout {
+                gap: 1rem;
+            }
+
+            .card {
+                padding: 1.5rem;
+            }
+
+            .progress-details {
+                grid-template-columns: 1fr;
+            }
+
+            .device-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .status-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.75rem;
+            }
+
+            .action-bar {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                text-align: center;
+            }
+
+            .file-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .file-actions {
+                width: 100%;
+                justify-content: flex-end;
+            }
+        }
+
+        /* Loading Animation */
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(99, 102, 241, 0.2);
+            border-top-color: var(--primary-color);
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .card {
+            animation: fadeIn 0.3s ease-out;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="header-container">
+            <div class="logo">
+                <div class="logo-icon">⚡</div>
+                <span>ShearPoint</span>
+            </div>
+            <div class="header-status">
+                <span id="connectionStatus">Offline</span>
+                <div class="status-indicator" id="statusIndicator"></div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container">
+        <div class="layout">
+            <!-- Left Column: File Upload & Device Selection -->
+            <div>
+                <!-- File Upload Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">📤</div>
+                        <h2 class="card-title">Select Files</h2>
+                    </div>
+
+                    <div class="upload-area" id="uploadArea">
+                        <div class="upload-icon">📁</div>
+                        <p class="upload-text main">Click to select or drag files here</p>
+                        <p class="upload-text secondary">Supports all file types and sizes</p>
+                        <input type="file" id="fileInput" multiple>
+                    </div>
+
+                    <div class="file-list" id="fileList"></div>
+
+                    <div class="transfer-progress" id="transferProgress">
+                        <div class="progress-header">
+                            <span class="progress-title">Transfer Progress</span>
+                            <span class="progress-percentage" id="progressPercentage">0%</span>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar" id="progressBar"></div>
+                        </div>
+                        <div class="progress-details">
+                            <div class="progress-detail">
+                                <div class="progress-detail-label">Speed</div>
+                                <div class="progress-detail-value" id="progressSpeed">0 MB/s</div>
+                            </div>
+                            <div class="progress-detail">
+                                <div class="progress-detail-label">Time Left</div>
+                                <div class="progress-detail-value" id="progressTime">--:--</div>
+                            </div>
+                            <div class="progress-detail">
+                                <div class="progress-detail-label">Uploaded</div>
+                                <div class="progress-detail-value" id="progressUploaded">0 MB</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="action-bar">
+                        <button class="btn btn-primary" id="selectFilesBtn">Select Files</button>
+                        <button class="btn btn-secondary" id="clearFilesBtn">Clear All</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Device List & Status -->
+            <div>
+                <!-- Device Discovery Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">📱</div>
+                        <h2 class="card-title">Available Devices</h2>
+                    </div>
+
+                    <div class="device-list" id="deviceList">
+                        <div class="empty-state">
+                            <div class="empty-icon">🔍</div>
+                            <div class="empty-title">Searching for devices...</div>
+                            <p>Make sure other devices are connected to the same network</p>
+                        </div>
+                    </div>
+
+                    <div class="action-bar">
+                        <button class="btn btn-primary" id="scanDevicesBtn">Scan Devices</button>
+                        <button class="btn btn-secondary" id="connectBtn" disabled>Connect</button>
+                    </div>
+                </div>
+
+                <!-- Status Indicators Card -->
+                <div class="card" style="margin-top: 2rem;">
+                    <div class="card-header">
+                        <div class="card-icon">📊</div>
+                        <h2 class="card-title">Status & Logs</h2>
+                    </div>
+
+                    <div class="status-items" id="statusItems">
+                        <div class="status-item info">
+                            <div class="status-content">
+                                <div class="status-message">System Ready</div>
+                                <div class="status-time">Just now</div>
+                            </div>
+                            <span class="status-badge info">Info</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // State Management
+        const state = {
+            files: [],
+            devices: [],
+            selectedDevice: null,
+            isConnected: false,
+            transferInProgress: false
+        };
+
+        // DOM Elements
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileList = document.getElementById('fileList');
+        const deviceList = document.getElementById('deviceList');
+        const statusItems = document.getElementById('statusItems');
+        const selectFilesBtn = document.getElementById('selectFilesBtn');
+        const clearFilesBtn = document.getElementById('clearFilesBtn');
+        const scanDevicesBtn = document.getElementById('scanDevicesBtn');
+        const connectBtn = document.getElementById('connectBtn');
+        const transferProgress = document.getElementById('transferProgress');
+        const progressBar = document.getElementById('progressBar');
+        const progressPercentage = document.getElementById('progressPercentage');
+        const statusIndicator = document.getElementById('statusIndicator');
+        const connectionStatus = document.getElementById('connectionStatus');
+
+        // Event Listeners
+        uploadArea.addEventListener('click', () => fileInput.click());
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        uploadArea.addEventListener('drop', handleDrop);
+        fileInput.addEventListener('change', handleFileSelect);
+        selectFilesBtn.addEventListener('click', () => fileInput.click());
+        clearFilesBtn.addEventListener('click', clearFiles);
+        scanDevicesBtn.addEventListener('click', scanDevices);
+        connectBtn.addEventListener('click', connectToDevice);
+
+        // File Handling
+        function handleFileSelect(e) {
+            const newFiles = Array.from(e.target.files);
+            state.files.push(...newFiles);
+            renderFiles();
+            addStatusMessage('Files selected', 'success', `${newFiles.length} file(s) added`);
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const droppedFiles = Array.from(e.dataTransfer.files);
+            state.files.push(...droppedFiles);
+            renderFiles();
+            addStatusMessage('Files dropped', 'success', `${droppedFiles.length} file(s) added`);
+        }
+
+        function renderFiles() {
+            if (state.files.length === 0) {
+                fileList.innerHTML = '';
+                return;
+            }
+
+            fileList.innerHTML = state.files.map((file, index) => `
+                <div class="file-item">
+                    <div class="file-info">
+                        <div class="file-icon">📄</div>
+                        <div class="file-details">
+                            <div class="file-name">${file.name}</div>
+                            <div class="file-size">${formatFileSize(file.size)}</div>
+                        </div>
+                    </div>
+                    <div class="file-actions">
+                        <button class="btn btn-small btn-danger" onclick="removeFile(${index})">Remove</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function removeFile(index) {
+            state.files.splice(index, 1);
+            renderFiles();
+            addStatusMessage('File removed', 'info', 'File removed from queue');
+        }
+
+        function clearFiles() {
+            state.files = [];
+            renderFiles();
+            fileInput.value = '';
+            addStatusMessage('Queue cleared', 'warning', 'All files removed');
+        }
+
+        // Device Discovery
+        function scanDevices() {
+            scanDevicesBtn.disabled = true;
+            addStatusMessage('Scanning', 'info', 'Searching for devices on network...');
+
+            // Simulate device discovery
+            setTimeout(() => {
+                state.devices = [
+                    { id: 1, name: 'MacBook Pro', type: 'Computer', online: true },
+                    { id: 2, name: 'iPhone 14', type: 'Mobile', online: true },
+                    { id: 3, name: 'iPad Air', type: 'Tablet', online: false },
+                    { id: 4, name: 'Windows PC', type: 'Computer', online: true }
+                ];
+                renderDevices();
+                scanDevicesBtn.disabled = false;
+                addStatusMessage('Scan complete', 'success', `Found ${state.devices.filter(d => d.online).length} online device(s)`);
+            }, 1500);
+        }
+
+        function renderDevices() {
+            if (state.devices.length === 0) {
+                deviceList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">🔍</div>
+                        <div class="empty-title">No devices found</div>
+                        <p>Click "Scan Devices" to search again</p>
+                    </div>
+                `;
+                return;
+            }
+
+            deviceList.innerHTML = state.devices.map(device => `
+                <div class="device-item ${state.selectedDevice?.id === device.id ? 'active' : ''} ${!device.online ? 'offline' : ''}" onclick="selectDevice(${device.id})">
+                    <div class="device-header">
+                        <div class="device-icon">${getDeviceIcon(device.type)}</div>
+                        <div class="device-info">
+                            <div class="device-name">${device.name}</div>
+                            <div class="device-type">${device.type}</div>
+                        </div>
+                        <div class="device-status">
+                            <div class="status-dot ${device.online ? 'online' : ''}"></div>
+                            <span>${device.online ? 'Online' : 'Offline'}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function selectDevice(deviceId) {
+            const device = state.devices.find(d => d.id === deviceId);
+            if (device && device.online) {
+                state.selectedDevice = device;
+                connectBtn.disabled = false;
+                renderDevices();
+                addStatusMessage('Device selected', 'info', `${device.name} selected`);
+            }
+        }
+
+        function connectToDevice() {
+            if (!state.selectedDevice) return;
+
+            connectBtn.disabled = true;
+            addStatusMessage('Connecting', 'info', `Connecting to ${state.selectedDevice.name}...`);
+
+            setTimeout(() => {
+                state.isConnected = true;
+                statusIndicator.classList.add('active');
+                connectionStatus.textContent = `Connected to ${state.selectedDevice.name}`;
+                addStatusMessage('Connected', 'success', `Successfully connected to ${state.selectedDevice.name}`);
+                connectBtn.disabled = false;
+
+                // Enable file transfer if files are selected
+                if (state.files.length > 0) {
+                    startTransfer();
+                }
+            }, 1200);
+        }
+
+        function startTransfer() {
+            if (!state.isConnected || state.files.length === 0) {
+                addStatusMessage('Transfer failed', 'error', 'No device connected or files selected');
+                return;
+            }
+
+            state.transferInProgress = true;
+            transferProgress.classList.add('active');
+            addStatusMessage('Transfer started', 'success', `Transferring ${state.files.length} file(s)...`);
+
+            let progress = 0;
+            const transferInterval = setInterval(() => {
+                progress += Math.random() * 30;
+                if (progress > 100) progress = 100;
+
+                progressBar.style.width = progress + '%';
+                progressPercentage.textContent = Math.round(progress) + '%';
+                document.getElementById('progressSpeed').textContent = (Math.random() * 8).toFixed(1) + ' MB/s';
+                document.getElementById('progressUploaded').textContent = Math.round(progress * 5) + ' MB';
+
+                if (progress >= 100) {
+                    clearInterval(transferInterval);
+                    state.transferInProgress = false;
+                    addStatusMessage('Transfer complete', 'success', 'All files transferred successfully');
+                    setTimeout(() => {
+                        transferProgress.classList.remove('active');
+                        clearFiles();
+                    }, 2000);
+                }
+            }, 500);
+        }
+
+        // Helper Functions
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        function getDeviceIcon(type) {
+            const icons = {
+                'Computer': '💻',
+                'Mobile': '📱',
+                'Tablet': '📱',
+                'Laptop': '💻'
+            };
+            return icons[type] || '📱';
+        }
+
+        function addStatusMessage(title, type, message) {
+            const statusItem = document.createElement('div');
+            statusItem.className = `status-item ${type}`;
+            const now = new Date().toLocaleTimeString();
+            statusItem.innerHTML = `
+                <div class="status-content">
+                    <div class="status-message">${title}</div>
+                    <div class="status-time">${message}</div>
+                </div>
+                <span class="status-badge ${type}">${type}</span>
+            `;
+            statusItems.insertBefore(statusItem, statusItems.firstChild);
+
+            // Keep only last 10 items
+            while (statusItems.children.length > 10) {
+                statusItems.removeChild(statusItems.lastChild);
+            }
+        }
+
+        // Initialize
+        function init() {
+            addStatusMessage('Application loaded', 'success', 'ShearPoint is ready');
+            scanDevices();
+        }
+
+        // Start the app
+        init();
+    </script>
+</body>
+</html>
